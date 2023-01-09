@@ -1,10 +1,13 @@
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
+import openpyxl
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 
 # Using TMDB to find a movie director's id inside the API
-api_key = "c36f9d4a781179b2302784e7119c481f"
+api_key = "API KEY"
 director = input('Please say the name of a movie director: ').replace(' ', '%20') #asking the director from an input
 api_path = f'https://api.themoviedb.org/3/search/person?api_key={api_key}&language=en-US&query={director}&page=1&include_adult=false'
 
@@ -61,9 +64,77 @@ for movie in movies:
 # creating the dataframe with the lists
 df = pd.DataFrame({
     "Title": total_titles,
-    "Release Date": total_dates,
+    "Release_Date": total_dates,
     "Budget": total_budgets,
     "Revenue": total_revenues
 })
+print(df.isna().values.any()) # checking for NaN cells
+print(df.duplicated().values.any()) # checking for duplicated cells
+df.to_excel('raw_data.xlsx')
 
-print(df)
+# Remove rows with no budget or revenue
+for ind in df.index:
+    if df['Budget'][ind] == '-' or df['Revenue'][ind] == '-':
+        df.drop(ind, axis = 0, inplace= True)
+
+# Convert the budget and value data format by removing the $, . and , symbols
+chars_to_remove = [',', '$',]
+columns_to_clean = ['Budget', 'Revenue']
+for col in columns_to_clean:
+    for char in chars_to_remove:
+        # Replace each character with an empty string
+        df[col] = df[col].astype(str).str.replace(char, "")
+    # Convert column to a numeric data type
+    df[col] = pd.to_numeric(df[col])
+
+# Convert date data type to a DataTime OBJ
+df.Release_Date = pd.to_datetime(df.Release_Date)
+
+# Finding the Budget x Revenue plot:
+plt.figure(figsize=(8, 4), dpi=200)
+
+with sns.axes_style('darkgrid'):
+    ax = sns.scatterplot(data=df,
+                         x='Budget',
+                         y='Revenue',
+                         hue='Revenue',  # colour
+                         size='Revenue', )  # dot size
+
+    ax.set(ylim=(0, df['Revenue'].max(axis=0)*1.25),
+           xlim=(0, df['Budget'].max(axis=0)*1.25),
+           ylabel='Revenue in $ billions',
+           xlabel='Budget in $100 millions', )
+
+plt.show()
+
+# Finding the Time x Revenue plot:
+with sns.axes_style('darkgrid'):
+    ax = sns.scatterplot(data=df,
+                         x='Release_Date',
+                         y='Revenue',
+                         hue='Revenue',  # colour
+                         size='Revenue', )  # dot size
+
+    ax.set(ylim=(0, df['Revenue'].max(axis=0)*1.25),
+           xlim=(df.Release_Date.min(), df.Release_Date.max()),
+           ylabel='Revenue in $ billions',
+           xlabel='Years', )
+
+plt.show()
+
+# Running a linear regression to analyse the relationship ship between budget and revenue
+plt.figure(figsize=(8, 4), dpi=200)
+with sns.axes_style('darkgrid'):
+    ax = sns.regplot(data=df,
+                     x='Budget',
+                     y='Revenue',
+                     color='#2f4b7c',
+                     scatter_kws={'alpha': 0.3},
+                     line_kws={'color': '#ff7c43'})
+
+    ax.set(ylim=(0, df['Revenue'].max(axis=0)*1.25),
+           xlim=(0, df['Budget'].max(axis=0)*1.25),
+           ylabel='Revenue in $ billions',
+           xlabel='Budget in $100 millions')
+
+plt.show()
