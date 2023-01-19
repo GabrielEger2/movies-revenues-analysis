@@ -5,6 +5,9 @@ import openpyxl
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+# Load Requirements
+with open('requirements.txt') as f:
+    requirements = f.readlines()
 
 # Using TMDB to find a movie director's id inside the API
 api_key = "API KEY"
@@ -86,6 +89,8 @@ for col in columns_to_clean:
         df[col] = df[col].astype(str).str.replace(char, "")
     # Convert column to a numeric data type
     df[col] = pd.to_numeric(df[col])
+
+df.to_excel('clean_data.xlsx')
 
 # Convert date data type to a DataTime OBJ
 df.Release_Date = pd.to_datetime(df.Release_Date)
