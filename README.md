@@ -6,7 +6,7 @@ This is a code repository for an analyser of movies revenues from inputted direc
 <h3>Requirements</h3>
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-In order to locally use this website, you must install the libraries requirements using the following command: 
+In order to locally use this program, you must install the libraries requirements using the following command: 
 
 ```bash
  pip install -r requirements.txt
