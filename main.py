@@ -1,5 +1,4 @@
 import requests
-from bs4 import BeautifulSoup
 import pandas as pd
 import openpyxl
 import seaborn as sns
@@ -10,7 +9,7 @@ with open('requirements.txt') as f:
     requirements = f.readlines()
 
 # Using TMDB to find a movie director's id inside the API
-api_key = "API KEY"
+api_key = "API Key"
 director = input('Please say the name of a movie director: ').replace(' ', '%20') #asking the director from an input
 api_path = f'https://api.themoviedb.org/3/search/person?api_key={api_key}&language=en-US&query={director}&page=1&include_adult=false'
 
@@ -20,15 +19,7 @@ data = response.json()
 data = data['results'][0]
 
 # Creating a list for the movies that the director made
-# I've tried to find a method within the API to find all the movies directed by the director, but I couldn't
-# So I just web scrapped the main page
 movies_collected = []
-url = f"https://www.themoviedb.org/person/{data['id']}-{data['name'].replace(' ', '-').lower()}"
-response = requests.get(url)
-soup = BeautifulSoup(response.text, "html.parser")
-tables = soup.find_all('table', class_ = 'card credits')
-table = tables[0]
-movies = table.find_all('a', class_ = 'tooltip') # Finding all movies within the direct html table
 
 # Creating the lists that are  going to be used in pandas
 total_titles = []
@@ -36,35 +27,21 @@ total_dates = []
 total_budgets = []
 total_revenues = []
 
-# Finding movies ids with the API and finding it's data with web scrapping
-for movie in movies:
-    try:
-        movie_name = movie.getText().replace(' ', '%20')
-        api_path = f'https://api.themoviedb.org/3/search/movie?api_key={api_key}&language=en-US&query={movie_name}&page=1&include_adult=false'
-        response = requests.get(url=api_path)
-        data = response.json()
-        data = data['results'][0]
-        url = f"https://www.themoviedb.org/movie/{data['id']}-{data['title'].replace(' ', '-').lower()}"
-        response = requests.get(url)
-        soup = BeautifulSoup(response.text, "html.parser")
-        left_column = soup.find_all('section', class_ = 'facts left_column')
-        for section in left_column: # Getting the important data within the html left column
-            budget = section.contents[7]
-            budget = str(budget.text).replace('Budget ', '')
-            revenue = section.contents[9]
-            revenue = str(revenue.text).replace('Revenue ', '')
-            title = data['title']
-            release_date = data['release_date']
+# Finding movies data with the API
+movies_credits = f"https://api.themoviedb.org/3/person/{data['id']}/movie_credits?api_key={api_key}&language=en-US"
+response = requests.get(url=movies_credits)
+movies_credits = response.json()
+for movie in movies_credits['crew']:
+    if movie['job'] == 'Director':
+        movie_data = f"https://api.themoviedb.org/3/movie/{movie['id']}?api_key={api_key}&language=en-US"
+        response = requests.get(url=movie_data)
+        movie_data = response.json()
+        total_titles.append(movie_data['original_title'])
+        total_dates.append(movie_data['release_date'])
+        total_budgets.append(movie_data['budget'])
+        total_revenues.append(movie_data['revenue'])
 
-            # Appending the movie information to the lists
-            total_titles.append(title)
-            total_dates.append(release_date)
-            total_budgets.append(budget)
-            total_revenues.append(revenue)
-    except:
-        pass
-
-# creating the dataframe with the lists
+# Creating the dataframe with the lists
 df = pd.DataFrame({
     "Title": total_titles,
     "Release_Date": total_dates,
@@ -77,7 +54,7 @@ df.to_excel('raw_data.xlsx')
 
 # Remove rows with no budget or revenue
 for ind in df.index:
-    if df['Budget'][ind] == '-' or df['Revenue'][ind] == '-':
+    if df['Budget'][ind] == 0 or df['Revenue'][ind] == 0:
         df.drop(ind, axis = 0, inplace= True)
 
 # Convert the budget and value data format by removing the $, . and , symbols
