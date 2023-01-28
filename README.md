@@ -1,7 +1,7 @@
 # Movies Revenues Analysis
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-This is a code repository for an analyser of movies revenues from inputted directors, that uses Pandas, Seaborn, and Beautiful soup
+This is a code repository for an analyser of movies revenues from inputted directors, that uses Pandas, Seaborn, and TMDB's API
 
 <h3>Requirements</h3>
 
